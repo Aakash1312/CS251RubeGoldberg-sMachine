@@ -17,13 +17,23 @@
 */
 
 #include "cs251_base.hpp"
+#include <iostream>
 #include <cstdio>
+#include <vector>
 using namespace std;
 using namespace cs251;
+
 b2Joint* jstring;
+b2Joint* jstring2;
+b2Joint* jstring3;
+int count2=0;
 b2World* global;
 int count1=0;
 bool destroyjoint=false;
+bool destroyotherjoint=false;
+bool showStars=false;
+//b2Joint* rjd;
+b2Body *b1, *body, *b2, *body2;
 class stars;
 stars* astars[20];
 int countarrayh[20];
@@ -43,11 +53,12 @@ stars(b2World* world,int posx,int posy) {
 
       //add circle fixture
       b2CircleShape circleShape;
-      circleShape.m_p.Set(0, 0);
-      circleShape.m_radius = 0.00001; //use class variable
+      //circleShape.m_p.Set(44.5f, 44.25);
+      circleShape.m_radius = 0.01f; //use class variable
       b2FixtureDef myFixtureDef;
       myFixtureDef.shape = &circleShape;
-      myFixtureDef.density = 0.000001;
+      myFixtureDef.density = 1.0f;
+      myFixtureDef.restitution=0.0f;
       m_body->CreateFixture(&myFixtureDef);
 
       //m_body->SetUserData(this);
@@ -56,6 +67,7 @@ stars(b2World* world,int posx,int posy) {
     }
 
 };
+vector<stars*> tw;
 class Ball
 {
   public:
@@ -102,14 +114,15 @@ class button
   b2FixtureDef fd;
   b2BodyDef box1;
 bool m_contacting;
-button(b2World* m_world)
+button(b2World* m_world, float posx, float posy, float sizex, float sizey,int btype)
 {
-  box1.position.Set(20.5f,34.5f);
-  box1.type=b2_dynamicBody;
+  box1.position.Set(posx,posy);
+  if(btype){
+  box1.type=b2_dynamicBody;}
   b2PolygonShape boxshape;
-  boxshape.SetAsBox(.01f,0.01f);
+  boxshape.SetAsBox(sizex,sizey);
   fd.shape=&boxshape;
-  fd.density=1.f;
+  fd.density=5000.0f;
   m_body=m_world->CreateBody(&box1);
   m_body->CreateFixture(&fd);
   m_body->SetUserData(this);
@@ -121,33 +134,63 @@ class MyCL:public b2ContactListener
 {
     void BeginContact(b2Contact* contact) {
 int id1 = contact->GetFixtureA()->GetBody()->GetId();
-
-if(id1==0){
+int id2 = contact->GetFixtureB()->GetBody()->GetId();
+/*
+if(id1!=1||id2!=1){
       //check if fixture A was a ball
       void* bodyUserData = contact->GetFixtureA()->GetBody()->GetUserData();
       if ( bodyUserData )
         static_cast<Ball*>( bodyUserData )->startContact();
       }
       else
-      {if(count1==0){
+      {
+        if(id1=0&&)
+
+        if(count1==0){
         destroyjoint=true;count1++;}
         //global->DestroyJoint(jstring);
       }
-id1 = contact->GetFixtureA()->GetBody()->GetId();
+//id1 = contact->GetFixtureA()->GetBody()->GetId();
       //check if fixture B was a ball
       void* bodyUserData = contact->GetFixtureB()->GetBody()->GetUserData();
       if ( bodyUserData )
         static_cast<Ball*>( bodyUserData )->startContact();
+*/if(count1==0){
+      if(id1==1||id2==1)
+      {
 
+          destroyjoint=true;count1++;
+        }
+}
+cout<<count1<<endl;
+          //rjd.enableMotor=true;
+if(count1==1)
+{
+        if((id1==3&&id2==1)||(id1==1&&id2==3))
+        {
+          destroyotherjoint=true;
+          showStars=true;
+          count1++;
+          
+        }
+      
     }
 
+  }
+
     void EndContact(b2Contact* contact) {
+            int id1 = contact->GetFixtureA()->GetBody()->GetId();
       //check if fixture A was a ball
       //int id=contact->GetFixtureA()-
-      void* bodyUserData = contact->GetFixtureA()->GetBody()->GetUserData();
+      void* bodyUserData;
+      if(id1==0){
+      bodyUserData = contact->GetFixtureA()->GetBody()->GetUserData();
       if ( bodyUserData )
         static_cast<Ball*>( bodyUserData )->endContact();
-
+}
+else{
+        destroyjoint=false;
+}
       //check if fixture B was a ball
       bodyUserData = contact->GetFixtureB()->GetBody()->GetUserData();
       if ( bodyUserData )
@@ -159,15 +202,17 @@ id1 = contact->GetFixtureA()->GetBody()->GetId();
 		  //at global scope
   MyCL myContactListenerInstance;
 
-Ball* b;
-button* sw;
+//Ball* b;
+button* sw; 
+button* touchbox;
 //stars* astars[50];
 base_sim_t::base_sim_t()
 {
+        destroyjoint=false;
 	b2Vec2 gravity;
+        count1=0;
 	gravity.Set(0.0f, -10.0f);
 	m_world = new b2World(gravity);
-
 	m_text_line = 30;
 
 	m_point_count = 0;
@@ -182,14 +227,15 @@ base_sim_t::base_sim_t()
 	memset(&m_max_profile, 0, sizeof(b2Profile));
 	memset(&m_total_profile, 0, sizeof(b2Profile));
 	    m_world->SetContactListener(&myContactListenerInstance);
-	b=new Ball(m_world,1);
+	//b=new Ball(m_world,1);
+        /*
   for(int i=0;i<20;i++)
   {
   astars[i]=new stars(m_world,0,0);
   countarrayh[i]=0;
   global=m_world;
 }
-
+*/
 //##########
 b2FixtureDef fd;
 b2BodyDef box;
@@ -197,7 +243,7 @@ box.position.Set(20.5f,38.0f);
 b2PolygonShape boxshape;
 boxshape.SetAsBox(2.0f,0.1f);
 fd.shape=&boxshape;
-fd.density=1.f;
+fd.density=20.0f;
 b2Body* boxx=m_world->CreateBody(&box);
 boxx->CreateFixture(&fd);
 /*
@@ -211,14 +257,15 @@ fd.density=1.f;
 b2Body* boxx1=m_world->CreateBody(&box1);
 boxx1->CreateFixture(&fd);
 */
-sw=new button(m_world);
+sw=new button(m_world,20.5f,34.5f,0.01f,0.01f,1);
+touchbox=new button(m_world,-30.5f,7.0f,5.f,5.f,0);
 b2BodyDef box2;
 box2.position.Set(20.5f,34.4f);
 box2.type=b2_dynamicBody;
 //b2PolygonShape boxshape;
 boxshape.SetAsBox(.01f,0.01f);
 fd.shape=&boxshape;
-fd.density=1.f;
+fd.density=100.0f;
 b2Body* boxx2=m_world->CreateBody(&box2);
 boxx2->CreateFixture(&fd);
 
@@ -227,13 +274,14 @@ ball.position.Set(20.5f,30.0f);
 b2CircleShape circle;
 circle.m_radius=1.0f;
 fd.shape=&circle;
+fd.restitution=0;
 ball.type=b2_dynamicBody;
 fd.density=1.0f;
 b2Body* cir=m_world->CreateBody(&ball);
 cir->CreateFixture(&fd);
 //b2MotorJointDef mjd;
 b2RevoluteJointDef string;
-b2RevoluteJointDef string1;
+b2MotorJointDef string1;
 b2RevoluteJointDef string2;
 b2Vec2 anchor;
 anchor.Set(20.5f,38.0f);
@@ -241,9 +289,19 @@ b2Vec2 anchor1;
 anchor1.Set(20.5f,34.5f);
 b2Vec2 anchor2;
 anchor2.Set(20.5f,34.4f);
+//string1.bodyA=sw->m_body;
+//string1.bodyA=boxx2;
+//string1.localAnchorA=anchor1;
+//string1.localAnchorB=anchor2;
+//string1.collideConnected=true;
+//float32 ropeLength=0.1f;
+//string1.maxLength = ropeLength;
 string.Initialize(boxx,sw->m_body,anchor);
-string1.Initialize(sw->m_body,boxx2,anchor1);
+//string1.Initialize(sw->m_body,boxx2,anchor1);
+string1.Initialize(sw->m_body,boxx2);
 string2.Initialize(boxx2,cir,anchor2);
+string1.maxForce=1000.f;
+string1.maxTorque=1000.f;
 //mjd.Initialize(b1,body);
 //mjd.maxForce=1.f;
 //mjd.maxTorque=1000.f;
@@ -263,6 +321,87 @@ m_world->CreateJoint(&string2);
     */
     //in FooTest constructor
 
+    /*! 
+     *  17) The 2 Rotating Fans(Finale)
+     *  -# The rotating fan is modelled as 4 rotating rectangular fins about a circular disk hanging from a point.
+     *  -# Defined b2body* objects 'b1', 'body' representing the point of suspension and the fan respectively. 
+     *  -# Defined b2FixtureDef 'fd' for 'body' - with shapes - a vertical rectangular box(b2PolygonShape), a horizontal rectangular box(b2PolygonShape), a circular shape(b2CircleShape).
+     *  -# Defined b2BodyDef 'bd' and Set bd.position for both the fans, representing their different positions. Variable 'x' is used for setting the changing x-coordinate.
+     *  -# Defined b2RevoluteJoint 'rjd' and set rjd.enableMotor to true to make it rotate autonomously. This is done for both the fans.
+     */
+    {
+     b2FixtureDef *fd = new b2FixtureDef;
+     fd->density = 10.0;
+     fd->friction = 0.5;
+     fd->restitution = 0.f;
+     fd->shape = new b2PolygonShape;
+    
+     b2PolygonShape shape;
+     
+     b2CircleShape circle;
+     circle.m_radius = 1.0;
+     circle.m_p.Set(0.0f,-2.f);
+    
+     b2RevoluteJointDef rjd;
+     rjd.motorSpeed = 1.0f * b2_pi;
+     rjd.maxMotorTorque = 10000.0f;
+     rjd.enableMotor = false;
+  
+          
+      float x = 44.0f;
+
+      {
+       b2BodyDef bd;
+       bd.position.Set(x,44.0f);
+       b1 = m_world->CreateBody(&bd);
+    
+       bd.type = b2_dynamicBody;
+       bd.position.Set(x, 40.0f);
+       body = m_world->CreateBody(&bd);
+
+       shape.SetAsBox(0.5,4, b2Vec2(0.0f,-2.f), 0);
+       fd->shape = &shape;
+       body->CreateFixture(fd);
+     
+       shape.SetAsBox(4,0.5, b2Vec2(0.0f,-2.f), 0);
+       fd->shape = &shape;
+       body->CreateFixture(fd);
+      
+       fd->shape = &circle;
+       body->CreateFixture(fd);
+
+       rjd.Initialize(b1, body, b2Vec2(44.0f, 38.0f));
+       jstring2=m_world->CreateJoint(&rjd);
+  
+      } 
+      x=-44.0f;
+
+            {
+       b2BodyDef bd;
+       bd.position.Set(x,44.0f);
+       b2 = m_world->CreateBody(&bd);
+    
+       bd.type = b2_dynamicBody;
+       bd.position.Set(x, 40.0f);
+       body2 = m_world->CreateBody(&bd);
+
+       shape.SetAsBox(0.5,4, b2Vec2(0.0f,-2.f), 0);
+       fd->shape = &shape;
+       body2->CreateFixture(fd);
+     
+       shape.SetAsBox(4,0.5, b2Vec2(0.0f,-2.f), 0);
+       fd->shape = &shape;
+       body2->CreateFixture(fd);
+      
+       fd->shape = &circle;
+       body2->CreateFixture(fd);
+
+       rjd.Initialize(b2, body2, b2Vec2(-44.0f, 38.0f));
+       jstring3=m_world->CreateJoint(&rjd);
+  
+      } 
+     }
+
 }
 
 base_sim_t::~base_sim_t()
@@ -270,6 +409,8 @@ base_sim_t::~base_sim_t()
 	// By deleting the world, we delete the bomb, mouse joint, etc.
 	delete m_world;
 	m_world = NULL;
+        //destroyjoint=false;
+        //count1=0;
 }
 
 void base_sim_t::pre_solve(b2Contact* contact, const b2Manifold* oldManifold)
@@ -311,7 +452,8 @@ void base_sim_t::draw_title(int x, int y, const char *string)
 //b2Vec2 pos;
 void base_sim_t::step(settings_t* settings)
 {
- m_debug_draw.renderAtBodyPosition(b->m_body,b->m_contacting);
+ //m_debug_draw.renderAtBodyPosition(b->m_body,b->m_contacting);
+ /*
  for(int i=0;i<20;i++)
  {
   if(countarrayh[i]==0)
@@ -324,7 +466,53 @@ else
   m_debug_draw.renderStars(astars[i]->m_body,0.5);
 }
 }
+*/
  //pos=b->m_body->GetPosition();
+//code for balls
+vector<stars*>::iterator i = tw.begin();
+while(i!=tw.end())
+{
+  m_debug_draw.renderStars((*i)->m_body);
+  i++;
+}
+if(showStars){
+int j=rand()%100;
+if(j<20){
+  stars* a=new stars(m_world,44.f,44.25f);
+  stars* b=new stars(m_world,-44.f,44.25f);
+    //stars* c=new stars(m_world,44.f,38.25f);
+  //stars* d=new stars(m_world,-44.f,38.25f);
+    //stars* e=new stars(m_world,42.f,40.25f);
+  //stars* f=new stars(m_world,-40.5f,38.25f);
+    //stars* g=new stars(m_world,46.f,44.25f);
+  //stars* h=new stars(m_world,-48.0f,38.25f);
+  tw.push_back(a);
+  tw.push_back(b);
+    //tw.push_back(c);
+  //tw.push_back(d);
+  //tw.push_back(e);
+  //tw.push_back(f);
+  //tw.push_back(g);
+  //tw.push_back(h);
+}
+  //m_debug_draw.renderStars(a->m_body,0.0f);
+  /*
+b2Body* sbody;
+      b2CircleShape circle;
+      circle.m_radius = 0.01f;
+
+      b2FixtureDef ballfd;
+      ballfd.shape = &circle;
+      ballfd.density = 15.0f;
+      ballfd.friction = 1.0f;
+      ballfd.restitution = 0.0f;
+      b2BodyDef ballbd;
+      ballbd.type = b2_dynamicBody;
+      ballbd.position.Set(44.f, 44.25f);
+      sbody = m_world->CreateBody(&ballbd);
+      sbody->CreateFixture(&ballfd);
+      */
+}
   float32 time_step = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
 
   if (settings->pause)
@@ -482,9 +670,29 @@ else
     m_world->DrawDebugData();
   if(destroyjoint)
   {
+          //if(count2)
+          //{
+        //           m_world->DestroyJoint(jstring2);
+         // }
     //m_world->DestroyBody(sw->m_body);
     //jstring=NULL;
+
     m_world->DestroyJoint(jstring);
+    //m_world->DestroyJoint(jstring2);
+    //rjd.enableMotor=true;
     destroyjoint=false;
   }
+      if(destroyotherjoint){
+         b2RevoluteJointDef rjd;
+     rjd.motorSpeed = 3.0f * b2_pi;
+     rjd.maxMotorTorque = 10000.0f;
+     rjd.enableMotor = true;
+    rjd.Initialize(b1, body, b2Vec2(44.0f, 38.0f));
+    m_world->CreateJoint(&rjd);
+    m_world->DestroyJoint(jstring2);
+    rjd.Initialize(body2, b2, b2Vec2(-44.0f, 38.0f));
+    m_world->CreateJoint(&rjd); 
+    m_world->DestroyJoint(jstring3); 
+    destroyotherjoint=false;
+    }    
 }
