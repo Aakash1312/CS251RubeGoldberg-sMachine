@@ -17,12 +17,13 @@
 */
 
 #include "cs251_base.hpp"
-#include <iostream>
-#include <cstdio>
 #include <vector>
+#include <cstdio>
+#include <stdlib.h> 
+//#include <iostream>
 using namespace std;
 using namespace cs251;
-
+//int iterations=0;
 b2Joint* jstring;
 b2Joint* jstring2;
 b2Joint* jstring3;
@@ -37,37 +38,52 @@ b2Body *b1, *body, *b2, *body2;
 class stars;
 stars* astars[20];
 int countarrayh[20];
+//!Stars class
+/*!
+Creates shiny massless stars.
+*/
 class stars
 {
 public:
 b2Body* m_body;
+//! Constructor
+/*!
+ *It creates massless stars in the world which is passed as parameter.
+ *The position of the star is also passed as parameter.
+*/
 stars(b2World* world,int posx,int posy) {
       m_body = NULL;
-      //m_radius = radius;
-
-      //set up dynamic body, store in class variable
+      //! The Body Definition
+      /*!
+      *The star is defined as a dynamic body.
+      *Its position is set using the parameters passed to constructor.
+      */
       b2BodyDef myBodyDef;
       myBodyDef.type = b2_dynamicBody;
       myBodyDef.position.Set(posx, posy);
       m_body = world->CreateBody(&myBodyDef);
 
-      //add circle fixture
+      //! The Body Shape
+      /*!
+      *The shape of the body is a circle of radius 0.01 units.
+      */
       b2CircleShape circleShape;
-      //circleShape.m_p.Set(44.5f, 44.25);
       circleShape.m_radius = 0.01f; //use class variable
+      //! The Fixture
+      /*!
+      *The mass of each individual star is set to be 1.0 units.
+      *The restitution is highest, i.e., 1.
+      */
       b2FixtureDef myFixtureDef;
       myFixtureDef.shape = &circleShape;
       myFixtureDef.density = 1.0f;
       myFixtureDef.restitution=0.0f;
       m_body->CreateFixture(&myFixtureDef);
-
-      //m_body->SetUserData(this);
-        //in Ball class constructor
- // m_contacting = false;
     }
 
 };
 vector<stars*> tw;
+
 class Ball
 {
   public:
@@ -107,6 +123,7 @@ class Ball
   void startContact() { m_contacting = true; }
   void endContact() { m_contacting = false; }
 };
+
 class button
 {public:
   int id;
@@ -130,39 +147,44 @@ button(b2World* m_world, float posx, float posy, float sizex, float sizey,int bt
   m_contacting=false;
 }
 };
+//! MyCL
+/*!
+*A derived class of b2ContactListener.
+*/
 class MyCL:public b2ContactListener
 {
+
+  //! BeginContact
+  /*!
+  Takes care of the events when an object of button class makes
+  contact with some other objects.
+  */
     void BeginContact(b2Contact* contact) {
+      //! The Body Id
+      /*!
+      *Each body can be give an id to uniquely identify the body.
+      *id=1 corresponds to instances of button class.
+      *id=3 corresponds to the ball which is placed on the topmost plank.
+      */
 int id1 = contact->GetFixtureA()->GetBody()->GetId();
 int id2 = contact->GetFixtureB()->GetBody()->GetId();
-/*
-if(id1!=1||id2!=1){
-      //check if fixture A was a ball
-      void* bodyUserData = contact->GetFixtureA()->GetBody()->GetUserData();
-      if ( bodyUserData )
-        static_cast<Ball*>( bodyUserData )->startContact();
-      }
-      else
-      {
-        if(id1=0&&)
-
-        if(count1==0){
-        destroyjoint=true;count1++;}
-        //global->DestroyJoint(jstring);
-      }
-//id1 = contact->GetFixtureA()->GetBody()->GetId();
-      //check if fixture B was a ball
-      void* bodyUserData = contact->GetFixtureB()->GetBody()->GetUserData();
-      if ( bodyUserData )
-        static_cast<Ball*>( bodyUserData )->startContact();
-*/if(count1==0){
+        //! count1 variable
+        
+        /*!
+        *count1 variable takes care to check that destroyjoint or destroyotherjoint variables
+        are not set to true once the corrresponding joints are broken.
+        *if destroyjoint is set to true, then the string which suspends ball at
+        the top right corner is cut (basically a joint is broken)
+        *if destroyotherjoint is true, then the old joints associated with the 
+        two fans is cut and new joints are made.
+        */
+if(count1==0){
       if(id1==1||id2==1)
       {
 
           destroyjoint=true;count1++;
         }
 }
-cout<<count1<<endl;
           //rjd.enableMotor=true;
 if(count1==1)
 {
@@ -472,8 +494,12 @@ else
 vector<stars*>::iterator i = tw.begin();
 while(i!=tw.end())
 {
-  m_debug_draw.renderStars((*i)->m_body);
-  i++;
+  if((*i)->m_body->IsAwake()==true){
+  m_debug_draw.renderStars((*i)->m_body);i++;}
+  else{
+    m_world->DestroyBody((*i)->m_body);
+    i=tw.erase(i);}
+  //i++;
 }
 if(showStars){
 int j=rand()%100;
@@ -543,13 +569,12 @@ b2Body* sbody;
   m_world->SetSubStepping(settings->enable_sub_stepping > 0);
 
   m_point_count = 0;
-
+if(m_step_count==3000){exit(0);}
   m_world->Step(time_step, settings->velocity_iterations, settings->position_iterations);
   if (time_step > 0.0f)
     {
       ++m_step_count;
     }
-
   if (settings->draw_stats)
     {
       int32 body_count = m_world->GetBodyCount();
